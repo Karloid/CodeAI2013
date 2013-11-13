@@ -37,8 +37,6 @@ public final class MyStrategy implements Strategy {
         init(self, world, game, move);
 
         initTarget();
-        //log(" Start MOVE");
-        //    log("self.getActionPoints() " + self.getActionPoints());
 
         log("troopers size: " + troopers.length + " targetId: " + targetId + (target != null ? " target type: " + target.getType() : ""));
         if (firsTimeRun) {
