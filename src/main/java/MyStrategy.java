@@ -30,10 +30,6 @@ public final class MyStrategy implements Strategy {
     @Override
     public void move(Trooper self, World world, Game game, Move move) {
 
-        /*System.out.println("");
-
-        System.out.println("");   */
-
         init(self, world, game, move);
 
         initTarget();
@@ -204,7 +200,7 @@ public final class MyStrategy implements Strategy {
         } else {
             for (Trooper trooper : world.getTroopers()) {
                 if (trooper.isTeammate() && trooper.getId() == capitanId) {
-                    moveTo(trooper, 2);
+                    moveTo(getNearPoint(trooper), 0);
                     return true;
                 }
             }
@@ -260,12 +256,12 @@ public final class MyStrategy implements Strategy {
     }
 
     private void moveActionsCapitan() {
-        if (self.getActionPoints() <= game.getStandingMoveCost() * 4) {
+        if (self.getActionPoints() <= game.getStandingMoveCost() * 4 && someNeedHeal()) {
             move.setAction(ActionType.END_TURN);
             return;
         }
         if (medicNoFullHp()) {
-         //   move.setAction(ActionType.END_TURN);
+            //   move.setAction(ActionType.END_TURN);
             return;
         }
         Trooper targetTrooper = null;
@@ -296,9 +292,30 @@ public final class MyStrategy implements Strategy {
 
     }
 
-    private boolean medicNoFullHp() {
+    private boolean someNeedHeal() {
+        if (!medicAlive()) {
+           for (Trooper trooper: troopers) {
+               if (trooper.getHitpoints() < trooper.getMaximalHitpoints() && trooper.isTeammate()) {
+                   log("wait until all heal");
+                   return true;
+               }
+           }
+        }
+        return false;
+    }
+
+    private boolean medicAlive() {
         for (Trooper trooper:troopers) {
-            if (trooper.isTeammate() && trooper.getType() == TrooperType.FIELD_MEDIC && trooper.getHitpoints()< trooper.getMaximalHitpoints()) {
+            if (trooper.isTeammate() && trooper.getType() == TrooperType.FIELD_MEDIC) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean medicNoFullHp() {
+        for (Trooper trooper : troopers) {
+            if (trooper.isTeammate() && trooper.getType() == TrooperType.FIELD_MEDIC && trooper.getHitpoints() < trooper.getMaximalHitpoints()) {
                 log("WAIT MEDIC UNTIL HE HEALED");
                 move.setAction(ActionType.MOVE);
                 moveTo(getNearPoint(trooper), 0);
@@ -310,7 +327,10 @@ public final class MyStrategy implements Strategy {
     }
 
     private boolean moveTo(Point point, int distance) {
-
+        if (self.getX() == point.x && self.getY() == point.y ) {
+            move.setAction(ActionType.END_TURN);
+            return true;
+        }
         if (getDistance(new Point(self.getX(), self.getY()), point) >= distance) {
             double deltaX = (point.x - self.getX());
             double deltaY = (point.y - self.getY());
@@ -517,6 +537,13 @@ public final class MyStrategy implements Strategy {
 
 
         // FOR MEDIC
+        if (medicHasOne()) {
+            if (shootActions()) {
+                return true;
+            }
+        }
+
+
         if (self.getType() == TrooperType.FIELD_MEDIC && self.getActionPoints() >= game.getFieldMedicHealCost()) {
             if (self.getHitpoints() < self.getMaximalHitpoints()) {
                 move.setAction(ActionType.HEAL);
@@ -536,6 +563,15 @@ public final class MyStrategy implements Strategy {
                 }
             }
             if (goToHealTeammatte()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean medicHasOne() {
+        for (Trooper trooper : troopers) {
+            if (trooper.isTeammate() && trooper.getType() != TrooperType.FIELD_MEDIC) {
                 return true;
             }
         }
@@ -582,7 +618,7 @@ public final class MyStrategy implements Strategy {
             }
         }
 
-        return (result == null ? new Point(trooper) : result );
+        return (result == null ? new Point(trooper) : result);
     }
 
     private boolean closeHeal() {
