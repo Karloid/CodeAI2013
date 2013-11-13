@@ -1,5 +1,7 @@
 import model.*;
 
+import javax.swing.*;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -25,6 +27,7 @@ public final class MyStrategy implements Strategy {
     private Bonus[] bonuses;
     private static Long targetId;
     private static Trooper target;
+    private static GUIFrame guiFrame;
 
 
     @Override
@@ -39,6 +42,7 @@ public final class MyStrategy implements Strategy {
             firstTimeInit();
             firsTimeRun = false;
         }
+        guiUpdate();
 
         checkCapitanAlive();
 
@@ -57,6 +61,14 @@ public final class MyStrategy implements Strategy {
         if (moveActions()) {
             return;
         }
+
+    }
+
+    private void guiUpdate() {
+       DrawPanel panel = guiFrame.panel;
+       panel.updateContext(world, game, this);
+       guiFrame.updateGraphics();
+
 
     }
 
@@ -160,7 +172,21 @@ public final class MyStrategy implements Strategy {
             }
         }
         setFirstMoveIndex();
+
+        createGUI();
         //  troopers[0].
+
+    }
+
+    private void createGUI() {
+     /*   EventQueue.invokeLater(new Runnable() {
+            public void run() {  */
+        guiFrame = new GUIFrame(world, game, this);
+        guiFrame.toFront();
+        guiFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        guiFrame.setVisible(true);
+       /*     }
+        });  */
 
     }
 
@@ -294,18 +320,18 @@ public final class MyStrategy implements Strategy {
 
     private boolean someNeedHeal() {
         if (!medicAlive()) {
-           for (Trooper trooper: troopers) {
-               if (trooper.getHitpoints() < trooper.getMaximalHitpoints() && trooper.isTeammate()) {
-                   log("wait until all heal");
-                   return true;
-               }
-           }
+            for (Trooper trooper : troopers) {
+                if (trooper.getHitpoints() < trooper.getMaximalHitpoints() && trooper.isTeammate()) {
+                    log("wait until all heal");
+                    return true;
+                }
+            }
         }
         return false;
     }
 
     private boolean medicAlive() {
-        for (Trooper trooper:troopers) {
+        for (Trooper trooper : troopers) {
             if (trooper.isTeammate() && trooper.getType() == TrooperType.FIELD_MEDIC) {
                 return true;
             }
@@ -327,7 +353,7 @@ public final class MyStrategy implements Strategy {
     }
 
     private boolean moveTo(Point point, int distance) {
-        if (self.getX() == point.x && self.getY() == point.y ) {
+        if (self.getX() == point.x && self.getY() == point.y) {
             move.setAction(ActionType.END_TURN);
             return true;
         }
@@ -705,7 +731,7 @@ public final class MyStrategy implements Strategy {
     }
 
 
-    private boolean
+    public boolean
     canShoot(World world, Trooper self, Trooper targetTrooper) {
 
         return world.isVisible(getCorrectedShootingRange(),
