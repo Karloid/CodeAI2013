@@ -12,6 +12,7 @@ public final class MyStrategy implements Strategy {
     private static final int MIN_HP_TO_THROW_GRENADE = 20;
     private static final int HP_TO_HEAL = 90;
     public static final int DAMAGE_TERPIM = 30;
+    public static final int MAX_DISTANCE = 4;
     private final Random random = new Random();
     private Trooper self;
     private World world;
@@ -65,9 +66,9 @@ public final class MyStrategy implements Strategy {
     }
 
     private void guiUpdate() {
-       DrawPanel panel = guiFrame.panel;
+     /*  DrawPanel panel = guiFrame.panel;
        panel.updateContext(world, game, this);
-       guiFrame.updateGraphics();
+       guiFrame.updateGraphics();*/
 
 
     }
@@ -179,14 +180,12 @@ public final class MyStrategy implements Strategy {
     }
 
     private void createGUI() {
-     /*   EventQueue.invokeLater(new Runnable() {
-            public void run() {  */
+    /*
         guiFrame = new GUIFrame(world, game, this);
         guiFrame.toFront();
         guiFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         guiFrame.setVisible(true);
-       /*     }
-        });  */
+*/
 
     }
 
@@ -282,7 +281,7 @@ public final class MyStrategy implements Strategy {
     }
 
     private void moveActionsCapitan() {
-        if (self.getActionPoints() <= game.getStandingMoveCost() * 4 && someNeedHeal()) {
+        if (self.getActionPoints() <= game.getStandingMoveCost() * 4 || someNeedHeal() /*&& teammateSoFar()*/) {
             move.setAction(ActionType.END_TURN);
             return;
         }
@@ -316,6 +315,15 @@ public final class MyStrategy implements Strategy {
             moveTo(movePoints.get(movePointIndex), 2);
         }
 
+    }
+
+    private boolean teammateSoFar() {
+        for (Trooper trooper: troopers) {
+            if (self.getDistanceTo(trooper) > MAX_DISTANCE && trooper.isTeammate() ) {
+                return false;
+            }
+        }
+        return false;
     }
 
     private boolean someNeedHeal() {
