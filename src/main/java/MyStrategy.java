@@ -1,7 +1,5 @@
 import model.*;
 
-import javax.swing.*;
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -13,6 +11,7 @@ public final class MyStrategy implements Strategy {
     private static final int HP_TO_HEAL = 90;
     public static final int DAMAGE_TERPIM = 30;
     public static final int MAX_DISTANCE = 4;
+    public static final int DISMIS_LENGTH_DISTANCE = 2;
     private final Random random = new Random();
     private Trooper self;
     private World world;
@@ -28,7 +27,9 @@ public final class MyStrategy implements Strategy {
     private Bonus[] bonuses;
     private static Long targetId;
     private static Trooper target;
-    private static GUIFrame guiFrame;
+    // private static GUIFrame guiFrame;
+    private List<Point> savedPositions;
+    private static int dismissMoveIndex = -10;
 
 
     @Override
@@ -43,7 +44,7 @@ public final class MyStrategy implements Strategy {
             firstTimeInit();
             firsTimeRun = false;
         }
-        guiUpdate();
+        //  guiUpdate();
 
         checkCapitanAlive();
 
@@ -65,11 +66,11 @@ public final class MyStrategy implements Strategy {
 
     }
 
-    private void guiUpdate() {
-     /*  DrawPanel panel = guiFrame.panel;
+    private void guiUpdate() {     /*
+      DrawPanel panel = guiFrame.panel;
        panel.updateContext(world, game, this);
-       guiFrame.updateGraphics();*/
-
+       guiFrame.updateGraphics();
+                      */
 
     }
 
@@ -166,7 +167,7 @@ public final class MyStrategy implements Strategy {
     }
 
     private void firstTimeInit() {
-        initMovePoints();
+        initWayPoints();
         for (Trooper trooper : troopers) {
             if (trooper.isTeammate() && trooper.getType() == TrooperType.SOLDIER) {
                 capitanId = trooper.getId();
@@ -174,18 +175,18 @@ public final class MyStrategy implements Strategy {
         }
         setFirstMoveIndex();
 
-        createGUI();
+        //  createGUI();
         //  troopers[0].
 
     }
 
     private void createGUI() {
-    /*
+                     /*
         guiFrame = new GUIFrame(world, game, this);
         guiFrame.toFront();
         guiFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         guiFrame.setVisible(true);
-*/
+       */
 
     }
 
@@ -210,6 +211,11 @@ public final class MyStrategy implements Strategy {
         if (self.getActionPoints() < game.getStandingMoveCost()) {
             return false;
         }
+
+        if (self.getId() != capitanId && dismissMove()) {
+            return true;
+        }
+
         if (moveToMedic()) {
             return true;
         }
@@ -220,7 +226,7 @@ public final class MyStrategy implements Strategy {
 
         move.setAction(ActionType.MOVE);
         if (self.getId() == capitanId) {
-            moveActionsCapitan();
+            moveActionsCaptain();
             return true;
         } else {
             for (Trooper trooper : world.getTroopers()) {
@@ -233,6 +239,45 @@ public final class MyStrategy implements Strategy {
 
 
         return false;
+    }
+
+    private boolean dismissMove() {
+        if (!(world.getMoveIndex() == dismissMoveIndex || world.getMoveIndex() == dismissMoveIndex + 1)) {
+            return false;
+        }
+        Point captainTarget = null;
+        for (Trooper trooper : world.getTroopers()) {
+            if (trooper.isTeammate() && trooper.getId() == capitanId) {
+                captainTarget = new Point(trooper);
+            }
+        }
+        if (captainTarget == null) {
+            return false;
+        }
+        Point movePoint = new Point(0, 0);
+        movePoint.x = (self.getX() - captainTarget.x) + self.getX();
+        movePoint.y = (self.getY() - captainTarget.y) + self.getY();
+        if (movePoint.x < 0) {
+            movePoint.x = 0;
+        }
+        if (movePoint.x > world.getWidth() - 1) {
+            movePoint.x = world.getWidth() - 1;
+        }
+
+        if (movePoint.y < 0) {
+            movePoint.y = 0;
+        }
+        if (movePoint.y > world.getHeight() - 1) {
+            movePoint.y = world.getHeight() - 1;
+        }
+        if (getDistance(new Point(self), captainTarget) >= 3) {
+            return false;
+        }
+        move.setAction(ActionType.MOVE);
+        moveTo(movePoint, 0);
+
+        log("DUE DISMISS COMMAND!: " + new Point(self) + " movePoint: " + movePoint + " captain: " + captainTarget);
+        return true;
     }
 
     private boolean moveToMedic() {
@@ -280,46 +325,55 @@ public final class MyStrategy implements Strategy {
         return testAccessability(new Point(unit));
     }
 
-    private void moveActionsCapitan() {
+    private void moveActionsCaptain() {
         if (self.getActionPoints() <= game.getStandingMoveCost() * 4 || someNeedHeal() /*&& teammateSoFar()*/) {
             move.setAction(ActionType.END_TURN);
             return;
         }
+        /*
         if (medicNoFullHp()) {
-            //   move.setAction(ActionType.END_TURN);
+            move.setAction(ActionType.END_TURN);
             return;
-        }
-        Trooper targetTrooper = null;
-        for (Trooper trooper : troopers) {
-            if (!trooper.isTeammate()) {
-                if (targetTrooper == null) {
-                    targetTrooper = trooper;
-                } else {
-                    if (getDistance(self, targetTrooper) > getDistance(self, trooper)) {
-                        targetTrooper = trooper;
-                    }
-                }
+        }        */
+
+        if (getDistance(new Point(self), movePoints.get(movePointIndex)) < 3) {
+            movePointIndex++;
+            if (movePointIndex == movePoints.size()) {
+                movePointIndex = 0;
             }
         }
-       /* if (targetTrooper != null) {
-            System.out.println(world.getMoveIndex() + " move to trooper! ####");
-            moveTo(targetTrooper);
-        } else */
-        {
-            if (getDistance(new Point(self), movePoints.get(movePointIndex)) < 3) {
-                movePointIndex++;
-                if (movePointIndex == movePoints.size()) {
-                    movePointIndex = 0;
-                }
+
+        moveTo(movePoints.get(movePointIndex), 2);
+        checkUnstuck();
+
+    }
+
+    private void checkUnstuck() {
+        if (savedPositions == null) {
+            savedPositions = new ArrayList<Point>();
+        }
+        savedPositions.add(new Point(self));
+        if (savedPositions.size() > 5) {
+            double distance = 0;
+            distance = getDistance(savedPositions.get(savedPositions.size() - 1), savedPositions.get(savedPositions.size() - 5));
+
+            log("distance run: " + distance);
+            if (distance < DISMIS_LENGTH_DISTANCE) {
+                log("РАЗОЙДИСЬ");
+                dismiss();
             }
-            moveTo(movePoints.get(movePointIndex), 2);
         }
 
     }
 
+    private void dismiss() {
+        dismissMoveIndex = world.getMoveIndex();
+
+    }
+
     private boolean teammateSoFar() {
-        for (Trooper trooper: troopers) {
-            if (self.getDistanceTo(trooper) > MAX_DISTANCE && trooper.isTeammate() ) {
+        for (Trooper trooper : troopers) {
+            if (self.getDistanceTo(trooper) > MAX_DISTANCE && trooper.isTeammate()) {
                 return false;
             }
         }
@@ -327,7 +381,8 @@ public final class MyStrategy implements Strategy {
     }
 
     private boolean someNeedHeal() {
-        if (!medicAlive()) {
+
+        if (medicAlive()) {
             for (Trooper trooper : troopers) {
                 if (trooper.getHitpoints() < trooper.getMaximalHitpoints() && trooper.isTeammate()) {
                     log("wait until all heal");
@@ -533,12 +588,20 @@ public final class MyStrategy implements Strategy {
 
     private boolean findTarget() {
         for (Trooper trooper : world.getTroopers()) {
-            if (!trooper.isTeammate() && canShoot(world, self, trooper) && (target == null || getDistance(self, trooper) < getDistance(self, target))) {
+            if (!trooper.isTeammate() && canShoot(world, self, trooper) && trooper.getType() == TrooperType.FIELD_MEDIC && (target == null || getDistance(self, trooper) < getDistance(self, target))) {
                 targetId = trooper.getId();
-                log("Target found! " + targetId);
+                log("MEDICTarget found! " + targetId);
                 target = trooper;
             }
         }
+        if (target == null)
+            for (Trooper trooper : world.getTroopers()) {
+                if (!trooper.isTeammate() && canShoot(world, self, trooper) && (target == null || getDistance(self, trooper) < getDistance(self, target))) {
+                    targetId = trooper.getId();
+                    log("Target found! " + targetId);
+                    target = trooper;
+                }
+            }
         if (target != null) {
             return true;
         } /*
@@ -606,10 +669,10 @@ public final class MyStrategy implements Strategy {
     private boolean medicHasOne() {
         for (Trooper trooper : troopers) {
             if (trooper.isTeammate() && trooper.getType() != TrooperType.FIELD_MEDIC) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     private boolean goToHealTeammatte() {
@@ -713,24 +776,40 @@ public final class MyStrategy implements Strategy {
         this.bonuses = world.getBonuses();
     }
 
-    private void initMovePoints() {
+    private void initWayPoints() {
+
+        movePoints = new ArrayList<Point>();
         if (jugnleMap()) {
-            movePoints = new ArrayList<Point>();
             movePoints.add(new Point(0, world.getHeight()));
             movePoints.add(new Point(world.getWidth() / 4, world.getHeight() / 2));
             movePoints.add(new Point(0, 0));
             movePoints.add(new Point(world.getWidth(), 0));
             movePoints.add(new Point((world.getWidth() / 4) * 3, world.getHeight() / 2));
             movePoints.add(new Point(world.getWidth(), world.getHeight()));
-            //     movePoints.add(new Point(world.getWidth() / 2, world.getHeight() / 2));
-        } else {
-            movePoints = new ArrayList<Point>();
+            //movePoints.add(new Point(world.getWidth() / 2, world.getHeight() / 2));
+        }/* else if (cheaserMap()) {
+            movePoints.add(new Point(0, 0));
+            movePoints.add(new Point(7, 1));
+            movePoints.add(new Point(10, 3));
+            movePoints.add(new Point(11, 4));
+            movePoints.add(new Point(12, 3));
+            movePoints.add(new Point(world.getWidth()/2, 3));
+            movePoints.add(new Point(16, 3));
+
+        } */ else {
             movePoints.add(new Point(0, world.getHeight()));
             movePoints.add(new Point(0, 0));
             movePoints.add(new Point(world.getWidth(), 0));
             movePoints.add(new Point(world.getWidth(), world.getHeight()));
             //   movePoints.add(new Point(world.getWidth() / 2, world.getHeight() / 2));
         }
+    }
+
+    private boolean cheaserMap() {
+        if (world.getCells()[2][2] != CellType.FREE && world.getCells()[1][5] != CellType.FREE) {
+            return true;
+        }
+        return false;
     }
 
     private boolean jugnleMap() {
