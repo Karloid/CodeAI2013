@@ -37,12 +37,29 @@ public class DrawPanel extends JPanel {
         super.paintComponent(g);
         // drawBonus(g);
         drawCells(g);
-        drawVisible(g);
-        drawCanShoot(g);
+     //   drawVisible(g);
+      //  drawCanShoot(g);
         drawBonus(g);
         drawTrooper(g);
+        drawWarning(g);
         //.setColor(Color.BLUE);
         //g.fillRect(15, 15, 100, 100);
+
+    }
+
+    private void drawWarning(Graphics g) {
+        int[][] result =  new int [world.getWidth()][world.getHeight()];
+        for (int x = 0; x < world.getWidth(); x++) {
+            for (int y = 0; y < world.getHeight(); y++) {
+                for (Trooper trooper : world.getTroopers()) {
+                    if (trooper.isTeammate() && world.isVisible(trooper.getShootingRange(), trooper.getX(), trooper.getY(), trooper.getStance(),
+                                x, y, TrooperStance.STANDING) && world.getCells()[x][y] == CellType.FREE) {
+                        g.setColor(Color.BLUE);
+                        g.fillRect(x * CELL_SIZE, y * CELL_SIZE + Y_CORRECT, CELL_SIZE,CELL_SIZE);
+                    }
+                }
+            }
+        }
 
     }
 

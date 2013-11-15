@@ -27,7 +27,7 @@ public final class MyStrategy implements Strategy {
     private Bonus[] bonuses;
     private static Long targetId;
     private static Trooper target;
-    // private static GUIFrame guiFrame;
+    private static GUIFrame guiFrame;
     private List<Point> savedPositions;
     private static int dismissMoveIndex = -10;
 
@@ -43,16 +43,23 @@ public final class MyStrategy implements Strategy {
         if (firsTimeRun) {
             firstTimeInit();
             firsTimeRun = false;
+            createGUI();
         }
-        //  guiUpdate();
+        guiUpdate();
 
         checkCapitanAlive();
 
-        if (medicActions()) {
+        doBasicMoveStrategy();
+
+    }
+
+    private void doBasicMoveStrategy() {
+
+        if (shootActions()) {
             return;
         }
 
-        if (shootActions()) {
+        if (medicActions()) {
             return;
         }
 
@@ -63,14 +70,13 @@ public final class MyStrategy implements Strategy {
         if (moveActions()) {
             return;
         }
-
     }
 
-    private void guiUpdate() {     /*
-      DrawPanel panel = guiFrame.panel;
-       panel.updateContext(world, game, this);
-       guiFrame.updateGraphics();
-                      */
+    private void guiUpdate() {
+        DrawPanel panel = guiFrame.panel;
+        panel.updateContext(world, game, this);
+        guiFrame.updateGraphics();
+
 
     }
 
@@ -175,7 +181,7 @@ public final class MyStrategy implements Strategy {
         }
         setFirstMoveIndex();
 
-        //  createGUI();
+
         //  troopers[0].
 
     }
