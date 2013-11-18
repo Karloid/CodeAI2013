@@ -67,7 +67,7 @@ public class GUIFrame extends JFrame {
         for (int x = 0; x < world.getWidth(); x++) {
             for (int y = 0; y < world.getHeight(); y++) {
                 for (Trooper trooper : world.getTroopers()) {
-                    if (!trooper.isTeammate() && world.isVisible(trooper.getShootingRange(), trooper.getX(), trooper.getY(), trooper.getStance(),
+                    if (!trooper.isTeammate() && world.isVisible(trooper.getVisionRange(), trooper.getX(), trooper.getY(), trooper.getStance(),
                             x, y, TrooperStance.STANDING) && world.getCells()[x][y] == CellType.FREE) {
                         result[x][y] += 1;
                     }
@@ -79,10 +79,10 @@ public class GUIFrame extends JFrame {
             for (int y = 0; y < world.getHeight(); y++) {
                 if (result[x][y] > 0) {
                     g.setColor(Color.RED);
-                    g.fillRect(x * CELL_SIZE + CELL_SIZE / 3, y * CELL_SIZE + CELL_SIZE / 3, CELL_SIZE - CELL_SIZE / 3, CELL_SIZE - CELL_SIZE / 3);
+                    g.fillRect(x * CELL_SIZE + CELL_SIZE / 3, y * CELL_SIZE + CELL_SIZE / 3, CELL_SIZE - CELL_SIZE / 2, CELL_SIZE - CELL_SIZE / 2);
+                    g.setColor(Color.BLACK);
+                    g.drawString(String.valueOf(result[x][y]), x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2 + 6);
                 }
-                g.setColor(Color.BLACK);
-                g.drawString(String.valueOf(result[x][y]), x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2);
             }
         }
 
