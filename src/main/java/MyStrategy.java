@@ -1,6 +1,7 @@
 import model.*;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -15,7 +16,7 @@ public final class MyStrategy implements Strategy {
     public static final int DISMIS_LENGTH_DISTANCE = 2;
     public static final int MEDIC_HP_EDGE_ON_FIGHT = 51;
     private final Random random = new Random();
-    private Trooper self;
+    public Trooper self;
     private World world;
     private Game game;
     private Move move;
@@ -29,9 +30,12 @@ public final class MyStrategy implements Strategy {
     private Bonus[] bonuses;
     private static Long targetId;
     private static Trooper target;
-    private static GUIFrame guiFrame;
+    // private static GUIFrame guiFrame;
     private List<Point> savedPositions;
     private static int dismissMoveIndex = -10;
+    public int[][] patch;
+    private boolean[][] check;
+    public boolean[][] available;
 
 
     @Override
@@ -46,11 +50,13 @@ public final class MyStrategy implements Strategy {
             firsTimeRun = false;
             createGUI();
         }
-        guiUpdate();
+
 
         checkCapitanAlive();
 
         doBasicMoveStrategy();
+
+
         log("res: " + move.getAction() + " direction: " + (move.getDirection() == null ? move.getX() + " :x y: " + move.getY() : move.getDirection()));
 
     }
@@ -76,7 +82,7 @@ public final class MyStrategy implements Strategy {
     }
 
     private void guiUpdate() {
-        guiFrame.updateGraphics(world, game, this);
+        //    guiFrame.updateGraphics(world, game, this);
 
 
     }
@@ -188,12 +194,12 @@ public final class MyStrategy implements Strategy {
     }
 
     private void createGUI() {
-
+        /*
         guiFrame = new GUIFrame(world, game, this);
         guiFrame.toFront();
         guiFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         guiFrame.setVisible(true);
-
+                    */
 
     }
 
@@ -236,9 +242,16 @@ public final class MyStrategy implements Strategy {
             moveActionsCaptain();
             return true;
         } else {
-            for (Trooper trooper : world.getTroopers()) {
-                if (trooper.isTeammate() && trooper.getId() == capitanId) {
-                    moveTo(getNearPoint(trooper), 0);
+            for (Trooper captain : world.getTroopers()) {
+                if (captain.isTeammate() && captain.getId() == capitanId) {
+            /*        for (Trooper trooperTeam : world.getTroopers()) {
+                        if (trooperTeam.isTeammate() && trooperTeam.getId() != self.getId() && getDistance(captain, self) > getDistance(trooperTeam, captain)) {
+                            moveTo(trooperTeam, 0);
+                            log("move to teammate!");
+                            return true;
+                        }
+                    }  */
+                    moveTo(captain, 0);
                     return true;
                 }
             }
@@ -442,6 +455,8 @@ public final class MyStrategy implements Strategy {
             move.setAction(ActionType.END_TURN);
             return true;
         }
+        moveTest(point, distance);
+        /*
         if (getDistance(new Point(self.getX(), self.getY()), point) >= distance) {
             double deltaX = (point.x - self.getX());
             double deltaY = (point.y - self.getY());
@@ -466,8 +481,159 @@ public final class MyStrategy implements Strategy {
             }
             //    checkMakedMove();
             //   log(move.getDirection() + " target: " + point + " self" + new Point(self) + " deltaX Y " + deltaX + " " + deltaY);
+        }     */
+        return true;
+
+    }
+
+    private void moveTest(Point point, int distance) {
+        patch = new int[world.getWidth()][world.getHeight()];
+        log(patch.length + " length");
+        for (int x = 0; x < world.getWidth(); x++) {
+            for (int y = 0; y < world.getHeight(); y++) {
+                patch[x][y] = 999;
+            }
+        }
+        check = new boolean[world.getWidth()][world.getHeight()];
+        for (int x = 0; x < world.getWidth(); x++) {
+            for (int y = 0; y < world.getHeight(); y++) {
+                check[x][y] = false;
+            }
+        }
+        available = new boolean[world.getWidth()][world.getHeight()];
+        flowAvalible(available);
+        check[point.x][point.y] = true;
+        patch[point.x][point.y] = 0;
+
+        while (!allChecked(check)) {
+            for (int x = 0; x < world.getWidth(); x++) {
+                for (int y = 0; y < world.getHeight(); y++) {
+                    if (check[x][y]) {
+
+                        handleNear(x + 1, y, x, y);
+                        handleNear(x - 1, y, x, y);
+                        handleNear(x, y + 1, x, y);
+                        handleNear(x, y - 1, x, y);
+
+                      /*  if (inFrame(x - 1, y) && available[x - 1][y] && patch[x - 1][y] > patch[x][y] + 1) {
+                            patch[x - 1][y] = patch[x][y] + 1;
+                            check[x - 1][y] = true;
+                        }
+
+                        if (inFrame(x, y + 1) && available[x][y + 1] && patch[x][y + 1] > patch[x][y] + 1) {
+                            patch[x][y + 1] = patch[x][y] + 1;
+                            check[x][y + 1] = true;
+                        }
+
+                        if (inFrame(x, y - 1) && available[x][y - 1] && patch[x][y - 1] > patch[x][y] + 1) {
+                            patch[x][y - 1] = patch[x][y] + 1;
+                            check[x][y - 1] = true;
+                        }
+                                  */
+                        check[x][y] = false;
+
+                    }
+                }
+            }
+        }
+        if (self.getId() == capitanId)
+            guiUpdate();
+        makeMove();
+    }
+
+    private void handleNear(int xTmp, int yTmp, int x, int y) {
+        if (inFrame(xTmp, yTmp) && available[xTmp][yTmp] && patch[xTmp][yTmp] > patch[x][y] + 1) {
+            patch[xTmp][yTmp] = patch[x][y] + 1;
+            check[xTmp][yTmp] = true;
+        }
+
+    }
+
+    private void makeMove() {
+        int xTmp;
+        int yTmp;
+        xTmp = self.getX() + 1;
+        yTmp = self.getY();
+        int north;
+        int west; // <<<<-
+        int east;  // --->>>>>
+        int south;
+        xTmp = self.getX();
+        yTmp = self.getY() - 1;
+        north = (inFrame(xTmp, yTmp) ? patch[xTmp][yTmp] : 999);
+
+        xTmp = self.getX() - 1;
+        yTmp = self.getY();
+        west = (inFrame(xTmp, yTmp) ? patch[xTmp][yTmp] : 999);
+
+        xTmp = self.getX() + 1;
+        yTmp = self.getY();
+        east = (inFrame(xTmp, yTmp) ? patch[xTmp][yTmp] : 999);
+
+        xTmp = self.getX();
+        yTmp = self.getY() + 1;
+        south = (inFrame(xTmp, yTmp) ? patch[xTmp][yTmp] : 999);
+        if (north <= south && north <= west && north <= east) {
+            move.setDirection(NORTH);
+            return;
+        }
+        if (south <= north && south <= west && south <= east) {
+            move.setDirection(SOUTH);
+            return;
+        }
+        if (west <= south && west <= north && west <= east) {
+            move.setDirection(WEST);
+            return;
+        }
+        if (east <= south && east <= west && east <= north) {
+            move.setDirection(EAST);
+            return;
+        }
+        // move.setDirection(CURRENT_POINT);
+
+
+    }
+
+    private boolean inFrame(int x, int y) {
+        if (x < 0 || x >= world.getWidth()) {
+            return false;
+        }
+        if (y < 0 || y >= world.getHeight()) {
+            return false;
         }
         return true;
+    }
+
+    private boolean allChecked(boolean[][] check) {
+        for (int x = 0; x < world.getWidth(); x++) {
+            for (int y = 0; y < world.getHeight(); y++) {
+                if (check[x][y]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private void flowAvalible(boolean[][] availible) {
+        for (int x = 0; x < world.getWidth(); x++) {
+            for (int y = 0; y < world.getHeight(); y++) {
+                availible[x][y] = true;
+            }
+        }
+        for (Trooper trooper : troopers) {
+            if (trooper.getId() != self.getId())
+                availible[trooper.getX()][trooper.getY()] = false;
+        }
+
+        for (int x = 0; x < world.getWidth(); x++) {
+            for (int y = 0; y < world.getHeight(); y++) {
+                if (world.getCells()[x][y] != CellType.FREE) {
+                    availible[x][y] = false;
+                }
+            }
+        }
+
 
     }
 
@@ -804,12 +970,12 @@ public final class MyStrategy implements Strategy {
     private void initWayPoints() {
         movePoints = new ArrayList<Point>();
         if (jugnleMap()) {
-            movePoints.add(new Point(0, world.getHeight()));
+            movePoints.add(new Point(0, world.getHeight() - 1));
             movePoints.add(new Point(world.getWidth() / 4, world.getHeight() / 2));
             movePoints.add(new Point(0, 0));
-            movePoints.add(new Point(world.getWidth(), 0));
+            movePoints.add(new Point(world.getWidth() - 1, 0));
             movePoints.add(new Point((world.getWidth() / 4) * 3, world.getHeight() / 2));
-            movePoints.add(new Point(world.getWidth(), world.getHeight()));
+            movePoints.add(new Point(world.getWidth() - 1, world.getHeight() - 1));
             //movePoints.add(new Point(world.getWidth() / 2, world.getHeight() / 2));
         }/* else if (cheaserMap()) {
             movePoints.add(new Point(0, 0));
@@ -821,10 +987,10 @@ public final class MyStrategy implements Strategy {
             movePoints.add(new Point(16, 3));
 
         } */ else {
-            movePoints.add(new Point(0, world.getHeight()));
+            movePoints.add(new Point(0, world.getHeight() - 1));
             movePoints.add(new Point(0, 0));
-            movePoints.add(new Point(world.getWidth(), 0));
-            movePoints.add(new Point(world.getWidth(), world.getHeight()));
+            movePoints.add(new Point(world.getWidth() - 1, 0));
+            movePoints.add(new Point(world.getWidth() - 1, world.getHeight() - 1));
             //   movePoints.add(new Point(world.getWidth() / 2, world.getHeight() / 2));
         }
     }

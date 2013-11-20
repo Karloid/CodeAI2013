@@ -50,8 +50,32 @@ public class GUIFrame extends JFrame {
         //   drawVisible(g);
         //  drawCanShoot(g);
         drawBonus(g);
-        drawWarning(g);
+        //   drawWarning(g);
         drawTrooper(g);
+        drawPatch(g);
+
+        drawSelf(g);
+
+    }
+
+    private void drawSelf(Graphics g) {
+        g.setColor(Color.RED);
+        g.fillRect(strategy.self.getX() * CELL_SIZE, strategy.self.getY() * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
+
+    private void drawPatch(Graphics g) {
+        g.setColor(Color.GRAY);
+        for (int x = 0; x < world.getWidth(); x++) {
+            for (int y = 0; y < world.getHeight(); y++) {
+                if (!strategy.available[x][y]) {
+                    g.setColor(Color.YELLOW);
+                    g.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                }
+                g.setColor(Color.GRAY);
+                g.drawString(strategy.patch[x][y] + " ", x * CELL_SIZE + CELL_SIZE / 3, y * CELL_SIZE + CELL_SIZE / 2);
+            }
+            //     System.out.println();
+        }
 
     }
 
@@ -128,6 +152,9 @@ public class GUIFrame extends JFrame {
                 g.setColor(Color.GREEN);
             } else {
                 g.setColor(Color.RED);
+            }
+            if (trooper.getId() == strategy.self.getId()) {
+                g.setColor(Color.BLUE);
             }
             g.fillOval(x, y + Y_CORRECT, CELL_SIZE, CELL_SIZE);
         }
