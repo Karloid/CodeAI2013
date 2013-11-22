@@ -72,7 +72,7 @@ public class GUIFrame extends JFrame {
                     g.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 }
                 g.setColor(Color.GRAY);
-                g.drawString(strategy.patch[x][y] + " ", x * CELL_SIZE + CELL_SIZE / 3, y * CELL_SIZE + CELL_SIZE / 2);
+                g.drawString(strategy.path[x][y] + " ", x * CELL_SIZE + CELL_SIZE / 3, y * CELL_SIZE + CELL_SIZE / 2);
             }
             //     System.out.println();
         }
